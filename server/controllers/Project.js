@@ -38,7 +38,6 @@ exports.createProject= async(req,res) => {
 
 exports.getAllProjects =async(req,res) => {
     try{
-        console.log("Recieved a call of get all projects");
         const allProject=await Project.find({}).populate("instructor").exec();
         return res.status(200).json({
             success:true,
@@ -136,7 +135,6 @@ exports.getInstructorProjects =async(req,res) => {
 }
 
 exports.getStudentAppliedProject =async(req,res) => {
-    console.log(req.user.id);
     const userId=req.user.id;
     try{
         const AppliedDetails = await Applied.find({ student: userId })

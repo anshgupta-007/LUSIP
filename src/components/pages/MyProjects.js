@@ -255,29 +255,101 @@ const TeacherProjects = () => {
 
       {/* Add Project Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-gray-800 bg-opacity-50 flex justify-center items-center">
-          <div className="bg-white p-8 rounded-lg w-96 shadow-lg">
-            <h2 className="text-2xl font-bold mb-4">Add New Project</h2>
+  <div className="fixed inset-0 bg-gray-800 bg-opacity-50 flex justify-center items-center">
+    <div className="bg-white p-8 rounded-lg w-96 shadow-lg">
+      <h2 className="text-2xl font-bold mb-4">Add New Project</h2>
 
-            {/* Other project form fields here */}
+      {/* Project Name */}
+      <div className="mb-4">
+        <label className="block text-sm font-medium mb-1">Project Name</label>
+        <input
+          type="text"
+          name="projectName"
+          placeholder="Enter project name"
+          className="w-full px-3 py-2 border rounded"
+          value={newProject.projectName}
+          onChange={handleInputChange}
+        />
+      </div>
 
-            <div className="flex justify-between">
-              <button
-                onClick={closeModal}
-                className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-700 transition"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleAddProject}
-                className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 transition"
-              >
-                Add Project
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Mode */}
+      <div className="mb-4">
+        <label className="block text-sm font-medium mb-1">Mode</label>
+        <select
+          name="mode"
+          className="w-full px-3 py-2 border rounded"
+          value={newProject.mode}
+          onChange={handleInputChange}
+        >
+          <option value="">Select mode</option>
+          <option value="Both">Both</option>
+          <option value="Online">Online</option>
+          <option value="Offline">Offline</option>
+        </select>
+      </div>
+
+      {/* Prerequisites */}
+      <div className="mb-4">
+        <label className="block text-sm font-medium mb-1">Prerequisites</label>
+        <input
+          type="text"
+          name="prerequisites"
+          placeholder="Enter prerequisites"
+          className="w-full px-3 py-2 border rounded"
+          value={newProject.prerequisites}
+          onChange={handleInputChange}
+        />
+      </div>
+
+      {/* Preferred Branch */}
+      <div className="mb-4">
+        <label className="block text-sm font-medium mb-1">Preferred Branch</label>
+        <select
+          name="preferredBranch"
+          className="w-full px-3 py-2 border rounded"
+          value={newProject.preferredBranch}
+          onChange={handleInputChange}
+        >
+          <option value="">Select preferred branch</option>
+          <option value="ALL">ALL</option>
+          <option value="CSE">CSE</option>
+          <option value="CCE">CCE</option>
+          <option value="ECE">ECE</option>
+          <option value="ME">ME</option>
+        </select>
+      </div>
+
+      {/* Description */}
+      <div className="mb-4">
+        <label className="block text-sm font-medium mb-1">Description</label>
+        <textarea
+          name="description"
+          placeholder="Enter project description"
+          className="w-full px-3 py-2 border rounded"
+          rows="3"
+          value={newProject.description}
+          onChange={handleInputChange}
+        />
+      </div>
+
+      <div className="flex justify-between">
+        <button
+          onClick={closeModal}
+          className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-700 transition"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={handleAddProject}
+          className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 transition"
+        >
+          Add Project
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
 
       {/* Project Details Modal */}
       {isDetailsModalOpen && projectDetails && (

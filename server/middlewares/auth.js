@@ -9,8 +9,7 @@ exports.auth= async (req,res,next)=>{
     try{
         console.log("Auth Calling");
         const token= req.body.token || req.cookies.token  || req.header("Authorization").replace("Bearer ","");
-        //console.log("Request files",req);
-        //console.log(token);
+
         if(!token){
             console.log("Token is Missing");
             return res.status(401).json({
@@ -21,7 +20,7 @@ exports.auth= async (req,res,next)=>{
         
         try{
             const decode=jwt.verify(token,process.env.JWT_SECRET);
-            console.log(decode);
+            //console.log(decode);
             req.user=decode;
         }
         catch(err){
@@ -31,7 +30,6 @@ exports.auth= async (req,res,next)=>{
                 message:"Invalid Token",
             })
         }
-        //console.log("Outside Auth");
         next();    
     }
     catch(err){
@@ -45,13 +43,14 @@ exports.auth= async (req,res,next)=>{
 
 exports.isStudent=async (req,res,next)=>{
     try{
-        console.log("Student Calling");
         if(req.user.accountType!=="Student"){
+            console.log("UnAuthorized Request");
             return res.status(401).json({
                 success:false,
                 message:"This is a protected route for students",
             })
         }
+        console.log("Student Verified");
         next();
     }
     catch(err){
@@ -67,11 +66,13 @@ exports.isStudent=async (req,res,next)=>{
 exports.isInstructor=async (req,res,next)=>{
     try{
         if(req.user.accountType!=="Instructor"){
+            console.log("UnAuthorized Request");
             return res.status(401).json({
                 success:false,
                 message:"This is a protected route for Instructor",
             })
         }
+        console.log("Instructor Verified");
         next();
     }
     catch(err){
@@ -86,11 +87,13 @@ exports.isInstructor=async (req,res,next)=>{
 exports.isAdmin=async (req,res,next)=>{
     try{
         if(req.user.accountType!=="Admin"){
+            console.log("UnAuthorized Request");
             return res.status(401).json({
                 success:false,
                 message:"This is a protected route for Admin only",
             })
         }
+        console.log("Admin Verified");
         next();
     }
     catch(err){

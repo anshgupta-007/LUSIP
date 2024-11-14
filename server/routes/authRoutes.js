@@ -6,12 +6,15 @@ const router = express.Router();
 const {
   login,
   signUp,
+  logout,
   sendOTP,
   changePassword,
   about,
   getallInstructor,
   deleteFaculty,
-  getallRequests
+  getallRequests,
+  createFacultybyAdmin,
+  userPresent,
 } = require("../controllers/auth");
 const {
   resetPasswordToken,
@@ -26,10 +29,15 @@ const {auth,isInstructor,isAdmin}= require('../middlewares/auth');
 // ********************************************************************************************************
 
 // Route for user login
-router.post("/login", login)
+router.post("/login", login);
 
 // Route for user signup
-router.post("/signup", signUp)
+router.post("/signup", signUp);
+
+// Route for user login
+router.post("/logout", logout);
+
+router.post("/createFacultybyAdmin",auth,isAdmin,createFacultybyAdmin);
 
 // Route for sending OTP to the user's email
 router.post("/sendotp", sendOTP)
@@ -54,6 +62,8 @@ router.post("/getAllFaculties",auth,isAdmin,getallInstructor);
 router.post("/deleteFaculty/:facultyId",deleteFaculty);
 
 router.post("/getallRequests",auth,isInstructor,getallRequests);
+
+router.post("/userpresent",userPresent);
 
 // Export the router for use in the main application
 module.exports = router

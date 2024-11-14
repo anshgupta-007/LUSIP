@@ -17,35 +17,33 @@ require('dotenv').config();
 exports.applyOnProject= async(req,res) => {
     const {projectId,instructorId}=req.params;
     const userId=req.user.id;
-    console.log("Inside Apply on Project Controller");
-    console.log(projectId,"   ",userId);
+    //console.log("Inside Apply on Project Controller");
+    //console.log(projectId,"   ",userId);
     try{
         const alreadyApplied=await Applied.find({project:projectId,student:userId,instructor:instructorId});
-        console.log("1");
-        console.log(alreadyApplied);
+        //console.log(alreadyApplied);
         if(alreadyApplied.length===1){
             return res.status(200).json({
                 success:true,
                 message:"You have Already Applied on this Project",
             })
         }
-        console.log("2");
         const totalApplied=await Applied.find({student:userId});
-        console.log("Total Applied",totalApplied);
+        //console.log("Total Applied",totalApplied);
         if(totalApplied.length===2){
             return res.status(200).json({
                 success:true,
                 message:"You have Reached the Limit to Apply",
             })
         }
-        console.log("3");
+
         // const ApplyData=await Applied.create({student:userId,project:projectId,status:"Pending"});
         //Send Mail to User and Instructor Both
         const user=await User.findById(userId);
         const project=await Project.findById(projectId).populate("instructor").exec();
         const name=user.firstName+" "+user.lastName;
         const facultyName=project.instructor.firstName+" "+project.instructor.lastName;
-        console.log("Project",project);
+        //console.log("Studnet Applied on this Project: ",project);
         try{
             const response=mailSender(
                 user.email,
@@ -53,14 +51,14 @@ exports.applyOnProject= async(req,res) => {
                 applyTemplate(project.projectName,name)
             );
             console.log(`You have Applied SuccessFully on ${project.projectName}`);
+            console.log(`Mail sent to ${user.email}`);
             //return resopnse
             const response2=mailSender(
                 project.instructor.email,
                 `New Student Applied on ${project.projectName} Project`,
                 facultyNotificationEmail(facultyName,name,project.projectName)
-
             );
-            console.log(`${user.firstName} ${user.lastName} applied on ${project.projectName}`);
+            console.log(`Mail sent to ${project.instructor.email}`);
 
             const applyOnProject=await Applied.create({project:projectId,student:userId,status:"Pending",instructor:instructorId});
 
@@ -89,7 +87,7 @@ exports.changeStatus= async(req,res)=> {
     const {status,applyId,reason}=req.body;
     try{
         const oldapply=await Applied.findById(applyId);
-        console.log(oldapply);
+        console.log(oldapply.status);
         if(oldapply.status===status){
             return res.status(200).json({
                 success:true,
@@ -161,4 +159,26 @@ exports.changeStatus= async(req,res)=> {
         console.log("Error on Changing Status");
 		return res.status(500).json({ success: false, error: err.message });
     }
+}
+
+exports.cancelApplicationController=async(req,res)=>{
+    try {
+        const applyId = req.body.applyId;
+        const userId = req.user.id; // Assuming user ID is stored in req.user after authentication middleware
+        console.log(userId,applyId);
+        // Check if the application exists
+        const application = await Applied.findOne({ _id: applyId});
+        if (!application) {
+            console.log("Application not found")
+          return res.status(404).json({ success: false, message: "Application not found." });
+        }
+    
+        // Delete the application
+        await Applied.deleteOne({ _id: application._id });
+    
+        res.status(200).json({ success: true, message: "Application cancelled successfully." });
+      } catch (error) {
+        console.error("Error in canceling application:", error);
+        res.status(500).json({ success: false, message: "Failed to cancel the application." });
+      }
 }

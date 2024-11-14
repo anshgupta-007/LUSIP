@@ -2,7 +2,7 @@ const nodemailer = require("nodemailer");
 
 const mailSender = async (email, title, body) => {
     try{
-        console.log(`Sending mail to ${email}`);
+        console.log(`Email sent to ${email} regarding ${title}`);
             let transporter = nodemailer.createTransport({
                 host:process.env.MAIL_HOST,
                 auth:{
@@ -11,15 +11,15 @@ const mailSender = async (email, title, body) => {
                 }
             })
 
-            console.log(`NO ERROR BEFORE INFO ${email}`);
-            console.log(email);
+            //console.log(`NO ERROR BEFORE INFO ${email}`);
+            //console.log(email);
             let info = await transporter.sendMail({
-                from: 'StudyNotion || CodeHelp - by Babbar',
+                from: 'LUSIP LNMIIT',
                 to:`${email}`,
                 subject: `${title}`,
                 html: `${body}`,
             })
-            console.log(`NO ERROR after INFO ${email}`);
+            //console.log(`NO ERROR after INFO ${email}`);
             //console.log(info);
             return info;
     }

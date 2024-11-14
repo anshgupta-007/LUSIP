@@ -8,13 +8,51 @@ const jwt=require('jsonwebtoken');
 const mailSender=require('../utils/mailSender');
 const Project= require("../models/projectSchema");
 const Applied=require('../models/appliedSchema');
+const facultyAccountCreatedEmail=require('../mail/templates/facultyAccountCreatedEmail')
 require('dotenv').config();
+
+exports.userPresent = async (req, res) => {
+  const { email } = req.body;  // Extract email from request body
+
+  // Validate the input
+  if (!email) {
+      return res.status(400).json({
+          success: false,
+          message: "Email is required",
+      });
+  }
+
+  try {
+      // Check if the user exists in the database by email
+      const user = await User.findOne({ email: email });
+
+      if (user) {
+          // User is found
+          return res.status(200).json({
+              success: true,
+              message: "User exists.",
+          });
+      } else {
+          // User not found
+          return res.status(202).json({
+              success: false,
+              message: "User not found.",
+          });
+      }
+  } catch (error) {
+      console.error(error);
+      return res.status(500).json({
+          success: false,
+          message: "Server error. Please try again later.",
+      });
+  }
+};
 
 exports.sendOTP = async (req, res) => {
 	try {
         
 		const { email } = req.body;
-        console.log(email);
+        //console.log(email);
 		// Check if user is already present
 		// Find user with provided email
 		const checkUserPresent = await User.findOne({ email });
@@ -35,14 +73,13 @@ exports.sendOTP = async (req, res) => {
 			lowerCaseAlphabets: false,
 			specialChars: false,
 		});
-		const result = await OTP.findOne({ otp: otp });
-		console.log("Result is Generate OTP Func");
-		console.log("OTP", otp);
-		console.log("Result", result);
+		var result = await OTP.findOne({ otp: otp });
+		
 		while (result) {
 			otp = otpGenerator.generate(6, {
 				upperCaseAlphabets: false,
 			});
+      result = await OTP.findOne({ otp: otp });
 		}
 		const otpPayload = { email, otp };
 		const otpBody = await OTP.create(otpPayload);
@@ -57,7 +94,6 @@ exports.sendOTP = async (req, res) => {
 		return res.status(500).json({ success: false, error: error.message });
 	}
 };
-
 
 exports.signUp = async (req, res) => {
   try {
@@ -158,6 +194,81 @@ exports.signUp = async (req, res) => {
   }
 };
 
+exports.createFacultybyAdmin=async(req,res)=>{
+  try{
+    const {firstName, lastName, email, password, confirmPassword} = req.body;
+    const adminEmail=req.user.email;
+    // Validate required fields
+    if (!firstName || !lastName || !email || !password || !confirmPassword) {
+      console.log("All fields are required");
+      return res.status(400).json({
+        success: false,
+        message: "All fields are required",
+      });
+    }
+
+    // Check if passwords match
+    if (password !== confirmPassword) {
+      console.log("Password Not Matched");
+      return res.status(200).json({
+        success: false,
+        message: "Password don't match",
+      });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const profileDetails = await Profile.create({
+      gender: null,
+      dateOfBirth: null,
+      about: null,
+      contactNumber: null
+    });
+
+    // Create the user
+    const user = await User.create({
+      firstName,
+      lastName,
+      email,
+      password: hashedPassword,
+      accountType:"Instructor",
+      additionalDetails: profileDetails._id,
+      image: `https://api.dicebear.com/5.x/initials/svg?seed=${firstName} ${lastName}`
+    });
+
+    console.log("User registered successfully");
+    const facultyName=firstName+" "+lastName;
+    try{
+      const response=mailSender(
+        email,
+        `Account created for LUSIP Project Listing`,
+        facultyAccountCreatedEmail(facultyName,adminEmail)
+      );
+  }
+  catch(err){
+      console.log("Error in Sending Email");
+      return res.status(402).json({
+          success:false,
+          message:"Error in Sending Email",
+      })
+  }
+
+    return res.status(201).json({
+      success: true,
+      message: "Faculty registered successfully",
+      faculty:user,
+    });
+
+  }
+  catch(err){
+    console.log("Error in Creating Faculty by Admin");
+    console.log(err);
+      return res.status(402).json({
+          success:false,
+          message:"Error in Creating Faculty by Admin",
+      })
+  }
+}
+
 
 exports.login = async (req, res) => {
   try {
@@ -165,33 +276,27 @@ exports.login = async (req, res) => {
 
     if (!email || !password) {
       console.log("Enter all fields");
-      return res.status(400).json({
+      return res.status(200).json({
         success: false,
-        message: "Please enter both email and password",
+        message: "Fill all Fields",
       });
     }
 
     const user = await User.findOne({ email });
     if (!user) {
       console.log("User not found");
-      return res.status(404).json({
+      return res.status(200).json({
         success: false,
-        message: "User not found",
+        message: "User Not Registered",
       });
     }
 
-    // Debugging statements
-    console.log("User found:", user);
-    console.log("Entered password:", password);
-    console.log("Stored password hash:", user.password);
-
     var validPassword = await bcrypt.compare(password, user.password);
-    validPassword=true;
     if (!validPassword) {
       console.log("Password mismatch");
-      return res.status(401).json({
+      return res.status(201).json({
         success: false,
-        message: "Incorrect password",
+        message: "Password Not Matched",
       });
     }
 
@@ -212,6 +317,7 @@ exports.login = async (req, res) => {
       expires: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
       httpOnly: true,
     };
+    console.log(`${user.accountType} logged in SuccesFully`);
     res.cookie("token", token, options).status(200).json({
       success: true,
       token,
@@ -249,7 +355,7 @@ exports.changePassword= async(req,res)=>{
             })
         }
         if(newPasword!==confirmnewPassword){
-            console.log("new PAssword dont match");
+            console.log("new Password dont match");
             return res.status(401).json({
                 success:false,
                 message:"Password Field Data not matching",
@@ -269,7 +375,7 @@ exports.changePassword= async(req,res)=>{
                     "Password Changed SuccessFully",
                     "Your password has been recently changed"
                 );
-                console.log("Password Reset SuccessFully",response),
+                console.log("Password Reset SuccessFully");
                 //return resopnse
                 res.status(200).json({
                     success:true,
@@ -328,26 +434,24 @@ exports.about= async(req,res) => {
     }
 }
 
-exports.logout= async(req,res)=>{
-    try{
-        console.log("Inside Logout controller");
-        const {userId}=req.params;
-        req.user="";
+exports.logout = (req, res) => {
+  try {
+    // Clear the cookie by setting it to an empty value and expiry date in the past
+    res.clearCookie('token', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production', // Set secure to true in production
+      sameSite: 'strict', // Adjust sameSite setting based on your needs
+    });
 
-
-    }
-    catch(err){
-        console.log("Error in Logout Controller",err.message);
-        return res.status(401).json({
-            success:false,
-            message:"Error in Logout Controller",
-        })
-    }
-}
+    res.status(200).json({ success: true, message: "User logged out successfully." });
+  } catch (error) {
+    console.error("Error during logout:", error);
+    res.status(500).json({ success: false, message: "Failed to log out the user." });
+  }
+};
 
 exports.getallInstructor= async(req,res) => {
     try{
-        console.log("Inside getallInstructor");
         const faculties=await User.find({accountType:"Instructor"});
 
         if(faculties.length===0){
@@ -357,7 +461,6 @@ exports.getallInstructor= async(req,res) => {
             })
         }
         
-        console.log("outside getallInstructor");
         return res.status(200).json({
             success:true,
             message:"All instructor Fetched",
@@ -375,7 +478,6 @@ exports.getallInstructor= async(req,res) => {
 
 exports.deleteFaculty= async(req,res) => {
     try{
-        console.log("Inside Delete Faculty");
         const {facultyId}=req.params;
         const result = await Project.deleteMany({ instructor: facultyId });
         const faculty=await User.findByIdAndDelete(facultyId);
@@ -405,10 +507,8 @@ exports.deleteFaculty= async(req,res) => {
 
 exports.getallRequests= async(req,res) => {
     try{
-        console.log(req.user);
+
         const instructorId=req.user.id;
-        console.log(instructorId);
-        console.log("Inside getallRequests");
         const faculties=await Applied.find({instructor:instructorId}).populate("project").populate("student").exec();
 
         if(faculties.length===0){
@@ -418,8 +518,7 @@ exports.getallRequests= async(req,res) => {
                 faculties
             })
         }
-        
-        console.log("outside getallRequests");
+      
         return res.status(200).json({
             success:true,
             message:"Request fetched SuccessFully",

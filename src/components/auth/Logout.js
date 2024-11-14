@@ -2,7 +2,7 @@ import  { useEffect, useContext,useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { UserContext } from './../../App'
 import { toast } from "react-toastify";
-// import axios from "axios";
+import axios from "axios";
 import LoadingSpinner from "../LoadingSpinner";
   
 
@@ -15,15 +15,15 @@ const Logout = () => {
 
     const logoutUser = async () => {
       try {
-        // const res = await axios.get(`${process.env.REACT_APP_SERVER_URL}/logout/${userId}`, {
-        //   // userId,
-        //   withCredentials: true, // include credentials in the request
-        //   headers: {
-        //     Accept: "application/json",
-        //     "Content-Type": "application/json",
-        //     // "userId": localStorage.getItem("userId")
-        //   }
-        // });
+        await axios.post(`${process.env.REACT_APP_SERVER_URL}/logout/`, {
+          // userId,
+          withCredentials: true, // include credentials in the request
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+            // "userId": localStorage.getItem("userId")
+          }
+        });
           dispatch({ type: "USER", payload: null })
           dispatch({ type: "USER_TYPE", payload: null })
 
@@ -37,8 +37,8 @@ const Logout = () => {
             toastId: 'logout',
         })
 
-          // Navigate to login page
-          navigate("/", { replace: true });
+          // Navigate to Home page
+          navigate("/", {replace: true});
       } catch (error) {
         //consolelog(error);
       }

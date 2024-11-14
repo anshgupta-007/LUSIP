@@ -10,6 +10,7 @@ const UpdatePassword = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
   const { token } = useParams(); // Assuming the reset token is passed as a URL parameter
+  const [authStatus, setAuthStatus] = useState("");
 
   const handleNewPasswordChange = (e) => {
     setNewPassword(e.target.value);
@@ -23,7 +24,7 @@ const UpdatePassword = () => {
     e.preventDefault();
 
     if (newPassword !== confirmPassword) {
-      toast.error("Passwords do not match!");
+      setAuthStatus("Password Not Matched");
       return;
     }
 
@@ -32,7 +33,7 @@ const UpdatePassword = () => {
     try {
       const response = await axios.post(
         `${process.env.REACT_APP_SERVER_URL}/reset-password`,
-        { newPassword, token },
+        { password:newPassword, token },
         {
           headers: {
             Accept: "application/json",
@@ -45,11 +46,11 @@ const UpdatePassword = () => {
         toast.success("Password reset successfully! Redirecting to login...");
         setTimeout(() => navigate("/login"), 2000); // Redirect to login page after 3 seconds
       } else {
-        toast.error("Failed to reset password. Try again.");
+        // toast.error("Failed to reset password. Try again.");
       }
     } catch (error) {
       console.error("Error resetting password:", error);
-      toast.error("An error occurred. Please try again.");
+       toast.error("An error occurred. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -88,6 +89,12 @@ const UpdatePassword = () => {
               required
             />
           </div>
+
+          {authStatus && (
+                <div className="text-red-600 text-sm font-semibold mb-4">
+                  {authStatus}
+                </div>
+          )}
 
           <button
             type="submit"

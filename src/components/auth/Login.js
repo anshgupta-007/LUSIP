@@ -15,6 +15,7 @@ const Login = () => {
 
   const loginUser = async (e) => {
     e.preventDefault();
+    setAuthStatus("");
     setIsLoading(true);
 
     try {
@@ -29,9 +30,17 @@ const Login = () => {
           },
         }
       );
-      if(response.data.message === "Password is Incorrect"){
-        toast.error("Incorrect Password");
-      } else {
+      console.log(response.data);
+      if(response.data.message === "Fill all Fields"){
+        setAuthStatus("Fill all Fields");
+      }
+      else if(response.data.message === "User Not Registered"){
+        setAuthStatus("User Not Registered");  
+      }
+      else if(response.data.message === "Password Not Matched"){
+        setAuthStatus("Incorrect Password");       
+      }
+      else {
         const data = response.data.user;
         toast.success("Login Successful");
         setIsLoading(false);
@@ -41,6 +50,7 @@ const Login = () => {
         dispatch({ type: "USER", payload: true });
         dispatch({ type: "USER_TYPE", payload: data.accountType });
       }
+      setIsLoading(false);
     } catch (error) {
       setIsLoading(false);
       setAuthStatus(error.response?.data?.error || "Something Went Wrong");
@@ -55,7 +65,7 @@ const Login = () => {
         <section className="min-h-screen flex items-center justify-center bg-gray-100">
           <div className="w-full max-w-md p-10 bg-white rounded-xl shadow-xl">
             <h3 className="text-2xl font-semibold text-gray-800 text-center mb-6">
-              Sign <span className="text-indigo-600">In</span>
+            User<span className="text-indigo-600"> Login</span>
             </h3>
 
             <form onSubmit={loginUser}>
