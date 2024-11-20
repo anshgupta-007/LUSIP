@@ -18,6 +18,7 @@ import VerifyOTP from "./components/auth/VerifyOTP";
 import Requests from "./components/pages/Requests";
 import ForgotPassword from "./components/pages/ForgotPassword";
 import UpdatePassword from "./components/pages/UpdatePassword";
+import LUSIPLandingPage from "./components/pages/LUSIPLandingPage";
 
 export const UserContext = createContext();
 
@@ -35,8 +36,8 @@ const App = () => {
       <UserContext.Provider value={{ state, dispatch }}>
         <Navbar />
         <Routes>
-        <Route path="/" element={state.userType === "Student" ? <HomePage /> : state.userType === "Instructor" ? <HomePage /> : <HomePage/>} />
-
+        <Route path="/projects" element={state.userType === "Student" ? <HomePage /> : state.userType === "Instructor" ? <HomePage /> : <HomePage/>} />
+        <Route path="/" element={<LUSIPLandingPage />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/logout" element={<Logout />} />

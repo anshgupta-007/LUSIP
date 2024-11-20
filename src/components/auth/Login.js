@@ -44,7 +44,7 @@ const Login = () => {
         const data = response.data.user;
         toast.success("Login Successful");
         setIsLoading(false);
-        navigate("/");
+        navigate("/projects");
         localStorage.setItem("jwtoken", data.token);
         localStorage.setItem("userId", data._id);
         dispatch({ type: "USER", payload: true });
