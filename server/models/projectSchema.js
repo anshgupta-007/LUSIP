@@ -1,34 +1,40 @@
-const mongoose=require('mongoose');
+// projectSchema.js
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../config/database');
+const User = require('./userSchema.js'); // Import User model
 
-const projectSchema=new mongoose.Schema({
-    projectName:{
-        type:String,
-        required:true,
+const Project = sequelize.define('Project', {
+  projectName: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
+  projectDescription: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  instructor: {
+    type: DataTypes.INTEGER,
+    references: {
+      model: 'Users',
+      key: 'id',
     },
-    projectDescription:{
-        type:String,
-    },
-    instructor:{
-        type:mongoose.Schema.Types.ObjectId,
-        ref:"User",
-        required:true
-    },
-    prerequisites:{
-        type:String,
-    },
-    mode:{
-        type:String,
-    },
-    preferredBranch:{
-        type:String,
-    },
-    studentsEnrolled:[
-        {
-            type:mongoose.Schema.Types.ObjectId,
-            ref:"User",
-            required:true
-        }
-    ],   
-});
+    allowNull: false,
+  },
+  prerequisites: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  mode: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  preferredBranch: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+}, { timestamps: false });
 
-module.exports=mongoose.model("Project",projectSchema);
+// Define association after model is fully loaded
+Project.belongsTo(User, { foreignKey: 'instructor', as: 'instructorId'});
+
+module.exports = Project;

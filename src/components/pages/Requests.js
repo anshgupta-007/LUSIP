@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { ToastContainer, toast } from "react-toastify";
 import 'react-toastify/dist/ReactToastify.css';
+import LoadingSpinner from "../LoadingSpinner";
 
 const Requests = () => {
   const [requests, setRequests] = useState([]);
@@ -37,7 +38,7 @@ const Requests = () => {
         headers: { "Content-Type": "application/json" },
       });
       toast.success(response.data.message);
-      setRequests(requests.map(req => req._id === applyId ? { ...req, status: "Approved" } : req));
+      setRequests(requests.map(req => req.id === applyId ? { ...req, status: "Approved" } : req));
     } catch (error) {
       console.error("Error accepting request", error);
     }
@@ -53,7 +54,7 @@ const Requests = () => {
         headers: { "Content-Type": "application/json" },
       });
       toast.success(response.data.message);
-      setRequests(requests.map(req => req._id === applyId ? { ...req, status: "Declined" } : req));
+      setRequests(requests.map(req => req.id === applyId ? { ...req, status: "Declined" } : req));
     } catch (error) {
       console.error("Error rejecting request", error);
     }
@@ -66,7 +67,7 @@ const Requests = () => {
   });
 
   if (loading) {
-    return <div className="text-center text-lg font-semibold py-4">Loading requests...</div>;
+    return  <LoadingSpinner/>;
   }
 
   return (
@@ -109,9 +110,9 @@ const Requests = () => {
               </thead>
               <tbody>
                 {filteredRequests.map((request) => (
-                  <tr key={request._id} className="hover:bg-gray-50">
+                  <tr key={request.id} className="hover:bg-gray-50">
                     <td className="p-4 border-b text-gray-800">{request.project.projectName}</td>
-                    <td className="p-4 border-b text-gray-800">{request.student.firstName} {request.student.lastName}</td>
+                    <td className="p-4 border-b text-gray-800">{request.studentId.firstName} {request.studentId.lastName}</td>
                     <td className="p-4 border-b">
                       <span className={`inline-block px-2 py-1 text-xs font-semibold rounded-full ${
                         request.status === "Approved" ? "bg-green-100 text-green-700" :
@@ -123,14 +124,14 @@ const Requests = () => {
                     </td>
                     <td className="p-4 border-b text-center space-x-2">
                       <button
-                        onClick={() => handleAccept(request._id)}
+                        onClick={() => handleAccept(request.id)}
                         className="bg-green-500 text-white px-3 py-1 rounded-md text-sm font-medium hover:bg-green-600"
                         disabled={request.status === "Approved"}
                       >
                         Accept
                       </button>
                       <button
-                        onClick={() => handleReject(request._id)}
+                        onClick={() => handleReject(request.id)}
                         className="bg-red-500 text-white px-3 py-1 rounded-md text-sm font-medium hover:bg-red-600"
                         disabled={request.status === "Declined"}
                       >

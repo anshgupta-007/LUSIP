@@ -18,8 +18,8 @@ const AppliedProjects = () => {
           "Content-Type": "application/json",
         },
       });
-      console.log("Printing data d", response.data.AppliedDetails);
-      setProjects(response.data.AppliedDetails || []);
+      console.log("Printing data d", response.data.appliedDetails);
+      setProjects(response.data.appliedDetails || []);
     } catch (error) {
       console.error("Error fetching project data:", error);
       toast.error("Failed to fetch applied projects.");
@@ -43,7 +43,7 @@ const AppliedProjects = () => {
 
       if (response.data.success) {
         toast.success("Request cancelled successfully!");
-        setProjects((prevProjects) => prevProjects.filter(project => project._id !== projectId));
+        setProjects((prevProjects) => prevProjects.filter(project => project.id !== projectId));
       } else {
         toast.error("Failed to cancel the request.");
       }
@@ -69,14 +69,14 @@ const AppliedProjects = () => {
       ) : projects.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {projects.map((project) => (
-            <div key={project._id} className="bg-white border border-gray-200 p-6 rounded-lg shadow-md hover:shadow-lg transition duration-300 ease-in-out relative">
+            <div key={project.id} className="bg-white border border-gray-200 p-6 rounded-lg shadow-md hover:shadow-lg transition duration-300 ease-in-out relative">
               <div className="flex justify-between items-center mb-2">
                 <h2 className="text-2xl font-bold text-gray-800">{project.project.projectName}</h2>
               </div>
               
               {project.status === 'Pending' && (
                 <button
-                  onClick={() => handleCancelRequest(project._id)}
+                  onClick={() => handleCancelRequest(project.id)}
                   className="absolute top-4 right-4 text-red-600 hover:text-red-800"
                 >
                   <MdDeleteForever className="text-2xl" />

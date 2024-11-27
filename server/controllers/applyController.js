@@ -1,7 +1,6 @@
 const express= require('express');
 const User=require("../models/userSchema");
 const OTP=require("../models/OTP");
-const Profile=require("../models/Profile"); 
 const otpgenerator=require('otp-generator');
 const bcrypt = require('bcrypt');
 const jwt=require('jsonwebtoken');
@@ -14,171 +13,247 @@ const studentApprovalEmail=require('../mail/templates/studentApprovalEmail');
 const studentDeclineEmail=require('../mail/templates/studentDeclineEmail');
 require('dotenv').config();
 
-exports.applyOnProject= async(req,res) => {
-    const {projectId,instructorId}=req.params;
-    const userId=req.user.id;
-    //console.log("Inside Apply on Project Controller");
-    //console.log(projectId,"   ",userId);
-    try{
-        const alreadyApplied=await Applied.find({project:projectId,student:userId,instructor:instructorId});
-        //console.log(alreadyApplied);
-        if(alreadyApplied.length===1){
+exports.applyOnProject = async (req, res) => {
+    const { projectId, instructorId } = req.params;
+    const userId = req.user.id;
+    console.log(userId,projectId,instructorId);
+    try {
+        // Check if the user has already applied for the project
+        const alreadyApplied = await Applied.findOne({
+            where: { project:projectId, student: userId, instructor:instructorId }
+        });
+
+        if (alreadyApplied) {
             return res.status(200).json({
-                success:true,
-                message:"You have Already Applied on this Project",
-            })
-        }
-        const totalApplied=await Applied.find({student:userId});
-        //console.log("Total Applied",totalApplied);
-        if(totalApplied.length===2){
-            return res.status(200).json({
-                success:true,
-                message:"You have Reached the Limit to Apply",
-            })
+                success: true,
+                message: "You have already applied for this project",
+            });
         }
 
-        // const ApplyData=await Applied.create({student:userId,project:projectId,status:"Pending"});
-        //Send Mail to User and Instructor Both
-        const user=await User.findById(userId);
-        const project=await Project.findById(projectId).populate("instructor").exec();
-        const name=user.firstName+" "+user.lastName;
-        const facultyName=project.instructor.firstName+" "+project.instructor.lastName;
-        //console.log("Studnet Applied on this Project: ",project);
-        try{
-            const response=mailSender(
+        // Check if the user has reached the limit for applications (assuming limit is 2)
+        const totalApplied = await Applied.count({
+            where: { student: userId }
+        });
+
+        if (totalApplied >= 2) {
+            return res.status(200).json({
+                success: true,
+                message: "You have reached the limit to apply",
+            });
+        }
+
+        // Fetch user and project details
+        const user = await User.findByPk(userId);
+        const project = await Project.findByPk(projectId, {
+            include: {
+                model: User,
+                as: 'instructorId', // Assuming 'instructor' is associated with the project
+                attributes: ['firstName', 'lastName', 'email']
+            }
+        });
+        console.log("undefined",user);
+        if (!user || !project) {
+            return res.status(404).json({
+                success: false,
+                message: "User or Project not found",
+            });
+        }
+
+        // Prepare names for the email content
+        const name = `${user.firstName} ${user.lastName}`;
+        const facultyName = `${project.instructorId.firstName} ${project.instructorId.lastName}`;
+
+        // Send email to the user and instructor
+        try {
+            // Send confirmation email to the user
+            await mailSender(
                 user.email,
-                `SuccessFully Applied on ${project.projectName}`,
-                applyTemplate(project.projectName,name)
+                `Successfully Applied on ${project.projectName}`,
+                applyTemplate(project.projectName, name)
             );
-            console.log(`You have Applied SuccessFully on ${project.projectName}`);
             console.log(`Mail sent to ${user.email}`);
-            //return resopnse
-            const response2=mailSender(
-                project.instructor.email,
+
+            // Send notification email to the instructor
+            await mailSender(
+                project.instructorId.email,
                 `New Student Applied on ${project.projectName} Project`,
-                facultyNotificationEmail(facultyName,name,project.projectName)
+                facultyNotificationEmail(facultyName, name, project.projectName)
             );
-            console.log(`Mail sent to ${project.instructor.email}`);
+            console.log(`Mail sent to ${project.instructorId.email}`);
 
-            const applyOnProject=await Applied.create({project:projectId,student:userId,status:"Pending",instructor:instructorId});
+            // Create the application record in the Applied table
+            const applyOnProject = await Applied.create({
+                project:projectId,
+                student: userId,
+                status: "Pending",
+                instructor:instructorId
+            });
 
             return res.status(200).json({
-                success:true,
-                message:"Applied SuccessFully",
+                success: true,
+                message: "Applied successfully",
                 applyOnProject
-            })
-        }
-        catch(err){
-            console.log("Error in Sending EMail");
-            console.log(err);
+            });
+        } catch (emailError) {
+            console.error("Error in sending email:", emailError);
             return res.status(402).json({
-                success:false,
-                message:"Error in Sending Email",
-            })
+                success: false,
+                message: "Error in sending email",
+            });
         }
+    } catch (err) {
+        console.error("Error in applyOnProject controller:", err.message);
+        return res.status(500).json({
+            success: false,
+            message: "Error in applying for project",
+            error: err.message
+        });
     }
-    catch(err){
-        console.log(err.message,"Error on applying");
-		return res.status(500).json({ success: false, error: error.message });
-    }
-}
+};
 
-exports.changeStatus= async(req,res)=> {
-    const {status,applyId,reason}=req.body;
-    try{
-        const oldapply=await Applied.findById(applyId);
-        console.log(oldapply.status);
-        if(oldapply.status===status){
+exports.changeStatus = async (req, res) => {
+    const { status, applyId, reason } = req.body;
+    try {
+        // Find the application by applyId
+        const oldApply = await Applied.findOne({
+            where: { id: applyId },  // Use 'id' as the primary key in Sequelize
+        });
+
+        if (!oldApply) {
+            return res.status(404).json({
+                success: false,
+                message: "Application not found",
+            });
+        }
+
+        console.log(oldApply.status);
+        
+        // If status is already the same, return success
+        if (oldApply.status === status) {
             return res.status(200).json({
-                success:true,
-                message:`Already ${status}`,
-                
-            })
+                success: true,
+                message: `Already ${status}`,
+            });
         }
 
-        const newapply=await Applied.findByIdAndUpdate(applyId,
-            {status,reason},
-            {new:true},
-        )
+        // Update the status and reason in the application
+        await Applied.update(
+            { status, reason },
+            { where: { id: applyId } }
+        );
 
-        const user=await User.findById(newapply.student);
-        const project=await Project.findById(newapply.project).populate("instructor").exec();
-        const name=user.firstName+" "+user.lastName;
-        const facultyName=project.instructor.firstName+" "+project.instructor.lastName;
-        if(status==="Approved"){
-            try{
-                const response=mailSender(
-                    user.email,
-                    `Faculty has approved you on  ${project.projectName}`,
-                    studentApprovalEmail(name,facultyName,project.projectName)
-                );
-                console.log(`Faculty has approved you on  ${project.projectName}`),
-                //return resopnse
-                res.status(200).json({
-                    success:true,
-                    message:"Approved SuccesFully",
-                    response,
-                })
-            }
-            catch(err){
-                console.log("Error in Sending EMail");
-                return res.status(402).json({
-                    success:false,
-                    message:"Error in Sending Email",
-                })
-            }
+        // Fetch the updated application
+        const updatedApply = await Applied.findOne({
+            where: { id: applyId },
+            include: [
+                { model: User, as: 'studentId' },  // Include student (applicant)
+                { model: Project, as: 'projectId', include: [{ model: User, as: 'instructorId' }] }  // Include project and instructor
+            ]
+        });
+
+        // If application not found after update (in case update failed)
+        if (!updatedApply) {
+            return res.status(404).json({
+                success: false,
+                message: "Updated application not found",
+            });
         }
-        else if(status==="Declined"){
-            try{
-                const response=mailSender(
+
+        // Logging for debugging
+        console.log("main", updatedApply);
+        
+        // Get the student and project details
+        const user = updatedApply.studentId;  // student info (Correct alias here)
+        const project = updatedApply.projectId;  // project info (Correct alias here)
+        
+        if (!user || !project || !project.instructorId) {
+            return res.status(404).json({
+                success: false,
+                message: "Missing student or project data"
+            });
+        }
+
+        const name = `${user.firstName} ${user.lastName}`;
+        const facultyName = `${project.instructorId.firstName} ${project.instructorId.lastName}`;
+
+        // Send email based on the new status
+        if (status === "Approved") {
+            try {
+                const response = await mailSender(
                     user.email,
-                    `Faculty has declined you on  ${project.projectName}`,
-                    studentDeclineEmail(name,facultyName,project.projectName)
+                    `Faculty has approved you on ${project.projectName}`,
+                    studentApprovalEmail(name, facultyName, project.projectName)
                 );
-                console.log(`Faculty has declined you on  ${project.projectName}`),
-                //return resopnse
-                res.status(200).json({
-                    success:true,
-                    message:"Declined SuccesFully",
+                console.log(`Faculty has approved you on ${project.projectName}`);
+                return res.status(200).json({
+                    success: true,
+                    message: "Approved Successfully",
                     response,
-                })
-            }
-            catch(err){
+                });
+            } catch (err) {
                 console.log("Error in Sending Email");
                 return res.status(402).json({
-                    success:false,
-                    message:"Error in Sending Email",
-                })
+                    success: false,
+                    message: "Error in Sending Email",
+                });
+            }
+        } else if (status === "Declined") {
+            try {
+                const response = await mailSender(
+                    user.email,
+                    `Faculty has declined you on ${project.projectName}`,
+                    studentDeclineEmail(name, facultyName, project.projectName)
+                );
+                console.log(`Faculty has declined you on ${project.projectName}`);
+                return res.status(200).json({
+                    success: true,
+                    message: "Declined Successfully",
+                    response,
+                });
+            } catch (err) {
+                console.log("Error in Sending Email");
+                return res.status(402).json({
+                    success: false,
+                    message: "Error in Sending Email",
+                });
             }
         }
 
-        //add accordingly to both user and project schema
-    }
-    catch(err){
+    } catch (err) {
         console.log(err.message);
         console.log("Error on Changing Status");
-		return res.status(500).json({ success: false, error: err.message });
+        return res.status(500).json({ success: false, error: err.message });
     }
-}
+};
 
-exports.cancelApplicationController=async(req,res)=>{
+
+
+exports.cancelApplicationController = async (req, res) => {
     try {
         const applyId = req.body.applyId;
-        const userId = req.user.id; // Assuming user ID is stored in req.user after authentication middleware
-        console.log(userId,applyId);
-        // Check if the application exists
-        const application = await Applied.findOne({ _id: applyId});
+        const userId = req.user.id;  // Get the logged-in user's ID from the authentication middleware
+
+        console.log(userId, applyId);
+
+        // Check if the application exists and belongs to the logged-in user
+        const application = await Applied.findOne({
+            where: {
+                id: applyId,  // Find by 'id' (primary key in Sequelize)
+                student: userId  // Ensure that the logged-in user is the one who applied for the project
+            }
+        });
+
         if (!application) {
-            console.log("Application not found")
-          return res.status(404).json({ success: false, message: "Application not found." });
+            console.log("Application not found");
+            return res.status(404).json({ success: false, message: "Application not found." });
         }
-    
+
         // Delete the application
-        await Applied.deleteOne({ _id: application._id });
-    
+        await application.destroy();  // Use Sequelize's destroy method to delete the record
+
         res.status(200).json({ success: true, message: "Application cancelled successfully." });
-      } catch (error) {
+    } catch (error) {
         console.error("Error in canceling application:", error);
         res.status(500).json({ success: false, message: "Failed to cancel the application." });
-      }
-}
+    }
+};

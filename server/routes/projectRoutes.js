@@ -9,7 +9,8 @@ const {
     deleteProject,
     getInstructorProjects,
     getStudentAppliedProject,
-    deleteAllProjects
+    deleteAllProjects,
+    getApplicants
 } = require('../controllers/Project');
 
 // Importing Middlewares
@@ -28,6 +29,8 @@ router.post("/getInstructorProjects",auth,isInstructor,getInstructorProjects);
 router.get("/userSpecificProject",auth, isStudent,getStudentAppliedProject);
 
 router.post("/deleteAllProjects",auth,isAdmin,deleteAllProjects);
+
+router.post("/getApplicants/:projectId",auth,isInstructor,getApplicants);
 
 
 module.exports = router;

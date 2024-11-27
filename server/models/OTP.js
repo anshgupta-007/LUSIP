@@ -1,53 +1,56 @@
-const mongoose = require("mongoose");
-const mailSender = require("../utils/mailSender");
-const emailTemplate = require("../mail/templates/emailVerificationTemplate");
-const OTPSchema = new mongoose.Schema({
-	email: {
-		type: String,
-		required: true,
-	},
-	otp: {
-		type: String,
-		required: true,
-	},
-	createdAt: {
-		type: Date,
-		default: Date.now,
-		expires: 60 * 5, // The document will be automatically deleted after 5 minutes of its creation time
-	},
+const { Sequelize, DataTypes } = require('sequelize');
+const { sequelize } = require('../config/database'); // Import your sequelize instance
+const mailSender = require('../utils/mailSender');
+const emailTemplate = require('../mail/templates/emailVerificationTemplate');
+
+const OTP = sequelize.define('OTP', {
+  email: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
+  otp: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
+  createdAt: {
+    type: DataTypes.DATE,
+    defaultValue: Sequelize.NOW,
+    allowNull: false,
+  },
+  expiresAt: {
+    type: DataTypes.DATE,
+    allowNull: false,
+  },
+}, {
+  tableName: 'otp',
+  timestamps: false,
 });
 
-// Define a function to send emails
+// After create hook to set expiration date and send email
+OTP.afterCreate(async (otpInstance) => {
+  try {
+    // Set the expiration date to 5 minutes after creation
+    otpInstance.expiresAt = new Date(otpInstance.createdAt).getTime() + 15 * 60 * 1000; // 5 minutes in milliseconds
+    await otpInstance.save();
+
+    console.log("New OTP document saved to database");
+
+    // Send verification email after creating the OTP
+    await sendVerificationEmail(otpInstance.email, otpInstance.otp);
+  } catch (error) {
+    console.log("Error occurred while processing OTP:", error);
+  }
+});
+
+// Function to send email
 async function sendVerificationEmail(email, otp) {
-	// Create a transporter to send emails
-
-	// Define the email options
-
-	// Send the email
-	try {
-		const mailResponse = await mailSender(
-			email,
-			"Verification Email",
-			emailTemplate(otp)
-		);
-		console.log("Email sent successfully: ", mailResponse);
-	} catch (error) {
-		console.log("Error occurred while sending email: ", error);
-		throw error;
-	}
+  try {
+    const mailResponse = await mailSender(email, "Verification Email", emailTemplate(otp));
+    console.log("Email sent successfully: ", mailResponse);
+  } catch (error) {
+    console.log("Error occurred while sending email: ", error);
+    throw error;
+  }
 }
-
-// Define a post-save hook to send email after the document has been saved
-OTPSchema.pre("save", async function (next) {
-	console.log("New document saved to database");
-
-	// Only send an email when a new document is created
-	if (this.isNew) {
-		await sendVerificationEmail(this.email, this.otp);
-	}
-	next();
-});
-
-const OTP = mongoose.model("OTP", OTPSchema);
 
 module.exports = OTP;

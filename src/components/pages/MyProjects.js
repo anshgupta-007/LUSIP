@@ -4,11 +4,15 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import clsx from "clsx";
 import { MdDeleteForever } from "react-icons/md";
+import LoadingSpinner from "../LoadingSpinner";
+import ContactSection from "../ContactSection";
 
 const TeacherProjects = () => {
   const [projects, setProjects] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [applicants, setApplicants] = useState([]);
+const [isApplicantsModalOpen, setIsApplicantsModalOpen] = useState(false);
   const [newProject, setNewProject] = useState({
     projectName: "",
     mode: "",
@@ -35,6 +39,7 @@ const TeacherProjects = () => {
           },
         }
       );
+      console.log(response.data);
 
       const fetchedProjects = response.data.Projects || [];
       setProjects(fetchedProjects);
@@ -155,8 +160,9 @@ const TeacherProjects = () => {
 
   const handleSaveChanges = async () => {
     try {
+      //console.log("Project")
       await axios.post(
-        `${process.env.REACT_APP_SERVER_URL}/updateProject/${projectDetails._id}`,
+        `${process.env.REACT_APP_SERVER_URL}/updateProject/${projectDetails.id}`,
         {
           projectName: projectDetails.projectName,
           mode: projectDetails.mode,
@@ -183,9 +189,45 @@ const TeacherProjects = () => {
     }
   };
 
+  const handleViewApplicants = async (projectId) => {
+    try {
+      const response = await axios.post(
+        `${process.env.REACT_APP_SERVER_URL}/getApplicants/${projectId}`,
+        {},
+        {
+          withCredentials: true,
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+          },
+        }
+      );
+  
+      const applicantsData = response.data.applicants || [];
+      if (applicantsData.length >= 0) {
+        setApplicants(applicantsData);
+        setIsApplicantsModalOpen(true);
+      } else {
+        toast.info("No applicants found for this project.");
+      }
+    } catch (error) {
+      console.error("Error fetching applicants:", error);
+      toast.error("Failed to fetch applicants.");
+    }
+  };
+  
+  const closeApplicantsModal = () => {
+    setIsApplicantsModalOpen(false);
+    setApplicants([]);
+  };
+  
+  if (isLoading) {
+    return  <LoadingSpinner/>;
+  }
+
   return (
     <div className="min-h-screen p-6 bg-gray-100">
-      <ToastContainer position="bottom-left" autoClose={3000} limit={1} hideProgressBar={false} newestOnTop closeOnClick pauseOnFocusLoss draggable pauseOnHover />
+      {/* <ToastContainer position="bottom-left" autoClose={3000} limit={1} hideProgressBar={false} newestOnTop closeOnClick pauseOnFocusLoss draggable pauseOnHover /> */}
 
       <h1 className="text-4xl text-center font-extrabold mb-10 text-indigo-700">
         My Listed Projects
@@ -200,55 +242,121 @@ const TeacherProjects = () => {
         </button>
       </div>
 
-      {isLoading ? (
-        <div className="flex items-center justify-center">
-          <div className="loader bg-indigo-500 text-white p-3 rounded-full flex space-x-3 animate-pulse">
-            <div className="w-4 h-4 bg-white rounded-full"></div>
-            <div className="w-4 h-4 bg-white rounded-full"></div>
-            <div className="w-4 h-4 bg-white rounded-full"></div>
-          </div>
-        </div>
+      {false ? (
+        <LoadingSpinner/>
       ) : projects.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 gap-8">
-          {projects.map((project) => (
-            <div
-              key={project._id}
-              className={clsx(
-                "bg-white border border-gray-200 p-6 rounded-lg shadow-md hover:shadow-lg transition duration-300 ease-in-out relative",
-                { "bg-indigo-100": selectedProjectId === project._id }
-              )}
+        <div className="overflow-x-auto">
+  <table className="min-w-full bg-white border border-gray-300 rounded-lg shadow-md">
+    <thead className="bg-indigo-200 text-indigo-800">
+      <tr>
+        <th className="px-6 py-4 text-left text-sm font-semibold">Project Name</th>
+        <th className="px-6 py-4 text-left text-sm font-semibold">Mode</th>
+        <th className="px-6 py-4 text-left text-sm font-semibold">Prerequisites</th>
+        <th className="px-6 py-4 text-left text-sm font-semibold">Preferred Branch</th>
+        <th className="px-6 py-4 text-center text-sm font-semibold">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {projects.map((project, index) => (
+        <tr
+          key={project.id}
+          className={clsx("hover:bg-gray-100 transition", {
+            "bg-gray-50": index % 2 === 0,
+            "bg-white": index % 2 !== 0,
+          })}
+        >
+          <td className="px-6 py-4 text-gray-800">{project.projectName}</td>
+          <td className="px-6 py-4 text-gray-600">{project.mode}</td>
+          <td className="px-6 py-4 text-gray-600">{project.prerequisites}</td>
+          <td className="px-6 py-4 text-gray-600">{project.preferredBranch}</td>
+          <td className="px-6 py-4 flex justify-center gap-4">
+            {/* View Details Button */}
+            <button
+              onClick={() => handleViewDetails(project)}
+              className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm shadow hover:bg-indigo-700 transition"
             >
-              <h2 className="text-2xl font-bold text-gray-800 mb-6">
-                {project.projectName}
-              </h2>
-              <p className="text-gray-600 mb-2">
-                <span className="font-semibold">Mode:</span> {project.mode}
-              </p>
-              <p className="text-gray-600 mb-2">
-                <span className="font-semibold">Prerequisites:</span>{" "}
-                {project.prerequisites}
-              </p>
-              <p className="text-gray-600 mb-2">
-                <span className="font-semibold">Preferred Branch:</span>{" "}
-                {project.preferredBranch}
-              </p>
+              View Details
+            </button>
 
-              <button
-                className="absolute top-4 right-4 text-red-600 hover:text-red-800"
-                onClick={() => handleDeleteProject(project._id)}
-              >
-                <MdDeleteForever className="text-2xl" />
-              </button>
+            {/* View Applicants Button */}
+            <button
+              onClick={() => handleViewApplicants(project.id)}
+              className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm shadow hover:bg-green-700 transition"
+            >
+              View Applicants
+            </button>
 
-              <button
-                onClick={() => handleViewDetails(project)}
-                className="mt-4 text-indigo-600 font-semibold hover:underline"
-              >
-                View Details
-              </button>
-            </div>
-          ))}
+            {/* Delete Button */}
+            <button
+              onClick={() => handleDeleteProject(project.id)}
+              className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm shadow hover:bg-red-700 transition"
+            >
+              Delete
+            </button>
+          </td>
+        </tr>
+      ))}
+    </tbody>
+  </table>
+
+  {isApplicantsModalOpen && (
+  <div className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center z-50">
+    <div className="bg-white rounded-lg shadow-lg w-11/12 md:w-3/4 lg:w-1/2 p-6 relative">
+      <h2 className="text-2xl font-bold mb-4 text-green-700">
+        Applicants for the Project
+      </h2>
+
+      {applicants.length > 0 ? (
+        <div className="overflow-y-auto max-h-96">
+          <table className="min-w-full bg-white border border-gray-300 rounded-lg">
+            <thead className="bg-green-600 text-white">
+              <tr>
+                <th className="px-4 py-2 text-left text-sm font-semibold">
+                  Student Name
+                </th>
+                <th className="px-4 py-2 text-left text-sm font-semibold">
+                  Status
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {applicants.map((applicant, index) => (
+                <tr
+                  key={index}
+                  className={clsx("hover:bg-gray-100 transition", {
+                    "bg-gray-50": index % 2 === 0,
+                    "bg-white": index % 2 !== 0,
+                  })}
+                >
+                  <td className="px-4 py-3 text-gray-800">
+                    {applicant.student.firstName}{" "}{applicant.student.lastName}
+                  </td>
+                  <td className="px-4 py-3 text-gray-600">
+                    {applicant.status}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
+      ) : (
+        <p className="text-gray-700 text-center">No applicants found.</p>
+      )}
+
+      <div className="mt-4 text-right">
+        <button
+          onClick={closeApplicantsModal}
+          className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-700 transition"
+        >
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
+</div>
+
       ) : (
         <p className="text-center text-xl text-gray-700">No Projects Found</p>
       )}
@@ -461,7 +569,6 @@ const TeacherProjects = () => {
     </div>
   </div>
 )}
-
     </div>
   );
 };
