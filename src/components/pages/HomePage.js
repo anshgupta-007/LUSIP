@@ -1,52 +1,18 @@
 import React, { useEffect, useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import LoadingSpinner from "../LoadingSpinner";
 import { toast, ToastContainer } from "react-toastify";
 import { UserContext } from "../../App";
 import "react-toastify/dist/ReactToastify.css";
-
-// Improved Loading and Error Handling Component
-const LoadingSpinner = () => (
-  <div className="flex justify-center items-center min-h-screen">
-    <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-blue-500"></div>
-  </div>
-);
-
-const ErrorDisplay = ({ message, onRetry }) => (
-  <div className="flex flex-col justify-center items-center min-h-screen p-4 text-center">
-    <svg 
-      xmlns="http://www.w3.org/2000/svg" 
-      className="h-24 w-24 text-red-500 mb-4" 
-      fill="none" 
-      viewBox="0 0 24 24" 
-      stroke="currentColor"
-    >
-      <path 
-        strokeLinecap="round" 
-        strokeLinejoin="round" 
-        strokeWidth={2} 
-        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" 
-      />
-    </svg>
-    <h2 className="text-2xl font-bold text-gray-800 mb-4">Oops! Something went wrong</h2>
-    <p className="text-gray-600 mb-4">{message}</p>
-    <button 
-      onClick={onRetry}
-      className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition duration-300"
-    >
-      Try Again
-    </button>
-  </div>
-);
-
 
 const HomePage = () => {
   const navigate = useNavigate();
   const [userData, setUserData] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [selectedProject, setSelectedProject] = useState(null);
   const { state } = useContext(UserContext);
+  const [isApplying,setApplying]=useState("Apply Now");
 
   const axiosConfig = {
     withCredentials: true,
@@ -56,58 +22,30 @@ const HomePage = () => {
     },
   };
 
-  // Enhanced error handling for API calls
-  const handleApiError = (error, defaultMessage) => {
-    const errorMessage = 
-      error.response?.data?.message || 
-      error.message || 
-      defaultMessage;
-    
-    toast.error(errorMessage);
-    setError(errorMessage);
-    console.error(error);
-  };
-
-  const handleShowDetails = (project) => {
-    setSelectedProject(project);
-  };
-
-  const handleCloseModal = () => {
-    setSelectedProject(null);
-  };
-
-  // Fetch all projects data with improved error handling
+  // Fetch all projects data
   const getProjectsData = async () => {
-    setIsLoading(true);
-    setError(null);
-    
     try {
       const response = await axios.get(
         `${process.env.REACT_APP_SERVER_URL}/getallProjects`,
         axiosConfig
       );
 
-      if (response.status === 200 && Array.isArray(response.data.allProject)) {
+      if (response.status === 200) {
         setUserData(response.data.allProject);
       } else {
-        throw new Error("Invalid response format");
+        toast.error("Failed to fetch projects.");
       }
     } catch (error) {
-      handleApiError(
-        error, 
-        "Failed to fetch projects. Please check your connection."
-      );
+      toast.error("Error fetching projects. Redirecting to login.");
+      navigate("/login");
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Delete all projects with confirmation and error handling
+  // Delete all projects (admin only)
   const handleDeleteAllProjects = async () => {
-    const confirmDelete = window.confirm(
-      "Are you sure you want to delete all projects? This action cannot be undone."
-    );
-    
+    const confirmDelete = window.confirm("Are you sure you want to delete all projects?");
     if (!confirmDelete) return;
 
     try {
@@ -116,222 +54,206 @@ const HomePage = () => {
         {},
         axiosConfig
       );
-      
       if (response.status === 200) {
-        toast.success("All projects have been deleted successfully.");
-        getProjectsData(); // Refresh the project list
+        toast.success("All projects have been deleted.");
+        getProjectsData(); // Refresh the project list after deletion
       }
     } catch (error) {
-      handleApiError(
-        error, 
-        "Failed to delete projects. Please try again."
-      );
+      toast.error("Failed to delete projects.");
     }
   };
 
-  // Project booking with comprehensive error handling
+  // Handle student project booking
   const handleBookingClick = async (projectId, projectName, instructorId) => {
     try {
+      setApplying("Applying");
       const response = await axios.post(
         `${process.env.REACT_APP_SERVER_URL}/apply/${projectId}/${instructorId}`,
         {},
         axiosConfig
       );
-      
-      toast.success(
-        response.data.message || 
-        `Successfully applied for the project: ${projectName}`
-      );
-      
-      getProjectsData(); // Refresh to update applied status
+      toast.success(response.data.message || "Successfully applied for the project.");
+      getProjectsData(); // Refresh the project list to update the applied status
     } catch (error) {
-      handleApiError(
-        error, 
-        `Failed to apply for project: ${projectName}`
-      );
+      toast.error(error.response?.data?.message || "Failed to apply for the project.");
     }
+
+    setApplying("Apply Now");
   };
 
-  // Lifecycle method to fetch projects
+  // Handle project details modal
+  const handleShowDetails = (project) => {
+    setSelectedProject(project);
+  };
+
+  // Close project details modal
+  const handleCloseModal = () => {
+    setSelectedProject(null);
+  };
+
+  // Fetch projects when component mounts
   useEffect(() => {
     getProjectsData();
   }, []);
 
-  // Render methods
-  const renderProjectTable = () => (
-    <div className="w-full overflow-x-auto">
-      <table className="w-full bg-white shadow-md rounded-lg overflow-hidden">
-        <thead className="bg-indigo-100 text-indigo-800">
-          <tr>
-            {["Project Name", "Faculty", "Prerequisites", "Mode", "Branch", "Details", 
-              ...(state?.userType === "Student" ? ["Action"] : [])
-            ].map((header) => (
-              <th 
-                key={header} 
-                className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider"
-              >
-                {header}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-gray-200">
-          {userData.map((project) => (
-            <tr 
-              key={project.id} 
-              className="hover:bg-gray-50 transition duration-200"
-            >
-              <td className="px-4 py-3 text-sm text-gray-700">
-                {project.projectName}
-              </td>
-              <td className="px-4 py-3 text-sm text-gray-700">
-                {project.instructorId?.firstName} {project.instructorId?.lastName}
-              </td>
-              <td className="px-4 py-3 text-sm text-gray-700">
-                {project.prerequisites}
-              </td>
-              <td className="px-4 py-3 text-sm text-gray-700">
-                {project.mode}
-              </td>
-              <td className="px-4 py-3 text-sm text-gray-700">
-                {project.preferredBranch}
-              </td>
-              <td className="px-4 py-3">
-                <button 
-                  onClick={() => handleShowDetails(project)}
-                  className="text-blue-500 hover:text-blue-700 hover:underline"
-                >
-                  View Details
-                </button>
-              </td>
-              {state?.userType === "Student" && (
-                <td className="px-4 py-3">
-                  {project.isApplied ? (
-                    <span className="text-green-600 font-bold">Applied</span>
-                  ) : (
-                    <button 
-                      onClick={() => handleBookingClick(
-                        project.id, 
-                        project.projectName, 
-                        project.instructorId.id
-                      )}
-                      className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-                    >
-                      Apply
-                    </button>
-                  )}
-                </td>
-              )}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
+  return (
+    <>
+      <ToastContainer position="bottom-left" autoClose={3000} className="z-50" />
 
-  const renderMobileView = () => (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:hidden">
-      {userData.map((project) => (
-        <div 
-          key={project.id} 
-          className="bg-white shadow-md rounded-lg p-4 hover:shadow-lg transition duration-300"
-        >
-          <h3 className="text-lg font-bold mb-2 text-indigo-700">
-            {project.projectName}
-          </h3>
-          <div className="space-y-2 mb-4">
-            <p className="text-sm text-gray-600">
-              <strong>Faculty:</strong> {project.instructorId?.firstName} {project.instructorId?.lastName}
-            </p>
-            <p className="text-sm text-gray-600">
-              <strong>Mode:</strong> {project.mode}
-            </p>
-            <p className="text-sm text-gray-600">
-              <strong>Branch:</strong> {project.preferredBranch}
-            </p>
-          </div>
-          <div className="flex space-x-2">
-            <button 
-              onClick={() => handleShowDetails(project)}
-              className="flex-1 px-3 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-            >
-              Details
-            </button>
-            {state?.userType === "Student" && !project.isApplied && (
-              <button 
-                onClick={() => handleBookingClick(
-                  project.id, 
-                  project.projectName, 
-                  project.instructorId.id
-                )}
-                className="flex-1 px-3 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+      {isLoading ? (
+        <LoadingSpinner />
+      ) : (
+        <div className="px-4 sm:px-6 lg:px-8 py-6 min-h-screen">
+          <div className="max-w-7xl mx-auto">
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row justify-between items-center mb-8 space-y-4 sm:space-y-0">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-gray-800 text-center  w-full">
+                Available <span className="text-indigo-700">Projects</span>
+              </h1>
+
+              {state?.userType === "Admin" && (
+                <div className="w-full sm:w-auto text-center sm:text-right">
+                  <button
+                    onClick={handleDeleteAllProjects}
+                    className="px-4 sm:px-6 py-2 sm:py-3 bg-red-600 text-white rounded-lg shadow-lg hover:bg-red-700 transition duration-300 ease-in-out w-full sm:w-auto"
+                  >
+                    Delete All Projects
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Table or Cards */}
+            {Array.isArray(userData) && userData.length > 0 ? (
+              <>
+                {/* Table View */}
+                <div className="w-full overflow-x-auto rounded-lg shadow-lg">
+  <div className="inline-block min-w-full align-middle">
+    <table className="min-w-full divide-y divide-gray-200">
+      {/* Table Header */}
+      <thead className="bg-gradient-to-r from-indigo-600 to-indigo-500">
+        <tr>
+          <th scope="col" className="sticky top-0 px-4 py-3.5 text-left text-sm font-semibold text-white">
+            Project Name
+          </th>
+          <th scope="col" className="sticky top-0 px-4 py-3.5 text-left text-sm font-semibold text-white">
+            Faculty Name
+          </th>
+          <th scope="col" className="sticky top-0 px-4 py-3.5 text-left text-sm font-semibold text-white hidden sm:table-cell">
+            Prerequisites
+          </th>
+          <th scope="col" className="sticky top-0 px-4 py-3.5 text-left text-sm font-semibold text-white hidden md:table-cell">
+            Mode
+          </th>
+          <th scope="col" className="sticky top-0 px-4 py-3.5 text-left text-sm font-semibold text-white hidden lg:table-cell">
+            Preferred Branch
+          </th>
+          <th scope="col" className="sticky top-0 px-4 py-3.5 text-center text-sm font-semibold text-white">
+            Details
+          </th>
+          {state?.userType === "Student" && (
+            <th scope="col" className="sticky top-0 px-4 py-3.5 text-center text-sm font-semibold text-white">
+              Action
+            </th>
+          )}
+        </tr>
+      </thead>
+
+      {/* Table Body */}
+      <tbody className="divide-y divide-gray-200 bg-white">
+        {userData.map((project, idx) => (
+          <tr 
+            key={project.id} 
+            className={`${
+              idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'
+            } hover:bg-indigo-50 transition-colors duration-200`}
+          >
+            <td className="whitespace-nowrap px-4 py-4 text-sm font-medium text-gray-900">
+              {project.projectName}
+            </td>
+            <td className="whitespace-nowrap px-4 py-4 text-sm text-gray-700">
+              {project.instructorId?.firstName} {project.instructorId?.lastName}
+            </td>
+            <td className="whitespace-nowrap px-4 py-4 text-sm text-gray-700 hidden sm:table-cell">
+              {project.prerequisites}
+            </td>
+            <td className="whitespace-nowrap px-4 py-4 text-sm text-gray-700 hidden md:table-cell">
+              {project.mode}
+            </td>
+            <td className="whitespace-nowrap px-4 py-4 text-sm text-gray-700 hidden lg:table-cell">
+              {project.preferredBranch}
+            </td>
+            <td className="whitespace-nowrap px-4 py-4 text-sm text-center">
+              <button
+                onClick={() => handleShowDetails(project)}
+                className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-indigo-600 hover:text-indigo-800 hover:underline focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
               >
-                Apply
+                Show Details
               </button>
+            </td>
+            {state?.userType === "Student" && (
+              <td className="whitespace-nowrap px-4 py-4 text-sm text-center">
+                {project.isApplied ? (
+                  <span className="inline-flex items-center px-2.5 py-1.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                    Already Applied
+                  </span>
+                ) : (
+                  <button
+                    onClick={() => handleBookingClick(project.id, project.projectName, project.instructorId?.id)}
+                    className="inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                  >
+                    {isApplying}
+                  </button>
+                )}
+              </td>
+            )}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+</div>
+              </>
+            ) : (
+              <div className="flex justify-center mt-10">
+                <h2 className="text-2xl font-bold text-gray-700">No Projects Found</h2>
+              </div>
             )}
           </div>
         </div>
-      ))}
-    </div>
-  );
+      )}
 
-  // Render final component
-  if (isLoading) return <LoadingSpinner />;
-  if (error) return <ErrorDisplay message={error} onRetry={getProjectsData} />;
-
-  return (
-    <div className="container mx-auto px-4 py-6">
-      {/* Header */}
-
+      {/* Modal */}
       {selectedProject && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4">
           <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
-            <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-4">
-              {selectedProject.projectName}
-            </h2>
+            <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-4">{selectedProject.projectName}</h2>
             <div className="space-y-2">
-              {/* Comprehensive Logging for Debugging */}
               <p className="text-base text-gray-700">
-                <strong>Instructor:</strong> {(() => {
-                  console.log("Instructor Data:", {
-                    instructorId: selectedProject.instructorId,
-                    instructor: selectedProject.instructor
-                  });
-                  return selectedProject.instructorId?.firstName 
-                    || selectedProject.instructor?.firstName 
-                    || "Not Available"
-                })()} {(() => {
-                  return selectedProject.instructorId?.lastName 
-                    || selectedProject.instructor?.lastName 
-                    || ""
-                })()}
+                <strong>Instructor:</strong> {selectedProject.instructorId?.firstName} {selectedProject.instructorId?.lastName}
               </p>
               <p className="text-base text-gray-700">
-                <strong>Prerequisites:</strong> {selectedProject.prerequisites || "None specified"}
+                <strong>Prerequisites:</strong> {selectedProject.prerequisites}
               </p>
               <p className="text-base text-gray-700">
-                <strong>Mode:</strong> {selectedProject.mode || "Not specified"}
+                <strong>Mode:</strong> {selectedProject.mode}
               </p>
               <p className="text-base text-gray-700">
-                <strong>Preferred Branch:</strong> {selectedProject.preferredBranch || "Any"}
+                <strong>Preferred Branch:</strong> {selectedProject.preferredBranch}
               </p>
               <p className="text-base text-gray-700 mb-4">
-                <strong>Description:</strong> {selectedProject.projectDescription || "No description available"}
+                <strong>Description:</strong> {selectedProject.projectDescription}
               </p>
             </div>
             <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
               {state?.userType === "Student" && !selectedProject.isApplied && (
                 <button
                   onClick={() =>
-                    handleBookingClick(
-                      selectedProject.id, 
-                      selectedProject.projectName, 
-                      selectedProject.instructorId?.id || selectedProject.instructor?.id
-                    )
+                    handleBookingClick(selectedProject.id, selectedProject.projectName, selectedProject.instructor?.id)
                   }
                   className="w-full sm:w-auto px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                 >
-                  Apply Now
+                  {isApplying}
                 </button>
               )}
               <button
@@ -344,47 +266,7 @@ const HomePage = () => {
           </div>
         </div>
       )}
-
-      <div className="flex flex-col md:flex-row justify-between items-center mb-6">
-      <h1 className="text-3xl font-bold text-gray-800 mb-4 md:mb-0">
-        Available <span className="text-indigo-600">Projects</span>
-      </h1>
-        {state?.userType === "Admin" && (
-          <button 
-            onClick={handleDeleteAllProjects}
-            className="px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition duration-300"
-          >
-            Delete All Projects
-          </button>
-        )}
-      </div>
-
-      {/* Projects Display */}
-      {userData.length > 0 ? (
-        <>
-          {renderProjectTable()}
-          {renderMobileView()}
-        </>
-      ) : (
-        <div className="text-center py-10">
-          <h2 className="text-2xl font-semibold text-gray-600">
-            No Projects Available
-          </h2>
-        </div>
-      )}
-
-      <ToastContainer 
-        position="bottom-right" 
-        autoClose={3000} 
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-      />
-    </div>
+    </>
   );
 };
 

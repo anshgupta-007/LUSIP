@@ -46,7 +46,7 @@ exports.createProject = async (req, res) => {
 exports.getAllProjects = async (req, res) => {
   try {
     // Fetch all projects and include the associated instructor (User) details
-    console.log("!");
+    //console.log("!");
     const allProject = await Project.findAll({
       include: [
         {
@@ -56,12 +56,12 @@ exports.getAllProjects = async (req, res) => {
         },
       ],
     });
-    console.log("Hello=>",allProject[0]);
+    //console.log("Hello=>",allProject[0]);
 
-    console.log("12");
+    //console.log("12");
 
     if (!allProject || allProject.length === 0) {
-      return res.status(404).json({
+      return res.status(200).json({
         success: false,
         message: 'No Projects Found',
       });

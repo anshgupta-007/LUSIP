@@ -1,4 +1,4 @@
-const facultyAccountCreatedEmail = (facultyName, facultyEmail, institutionName = "The LNM Institute of Information Technology, Jaipur") => {
+const facultyAccountCreatedEmail = (facultyName, facultyEmail, password, institutionName = "The LNM Institute of Information Technology, Jaipur") => {
     return `<!DOCTYPE html>
     <html>
     
@@ -45,6 +45,15 @@ const facultyAccountCreatedEmail = (facultyName, facultyEmail, institutionName =
                 font-size: 18px;
             }
 
+            .credentials-box {
+                background-color: #f8fafc;
+                border: 1px solid #e2e8f0;
+                border-radius: 6px;
+                padding: 20px;
+                margin: 20px 0;
+                text-align: left;
+            }
+
             .cta {
                 display: inline-block;
                 padding: 12px 30px;
@@ -85,28 +94,29 @@ const facultyAccountCreatedEmail = (facultyName, facultyEmail, institutionName =
     
     <body>
         <div class="container">
-            <!-- Main message -->
             <div class="message">Welcome to ${institutionName}!</div>
             
             <div class="body">
                 <p>Dear ${facultyName},</p>
                 <p>Your faculty account has been successfully created. You can now access your account and start exploring the available resources and tools.</p>
-                <p>Your login details:</p>
-                <p><span class="highlight">Email:</span> ${facultyEmail}</p>
-                <p>Please use the above email to log in and set up your account.</p>
+                
+                <div class="credentials-box">
+                    <p><span class="highlight">Your Login Credentials:</span></p>
+                    <p><strong>Email:</strong> ${facultyEmail}</p>
+                    <p><strong>Password:</strong> ${password}</p>
+                    <p style="color: #ef4444; font-size: 14px;">Please change your password after first login for security.</p>
+                </div>
+
                 <a href="[Login URL]" class="cta">Login to Your Account</a>
             </div>
             
-            <!-- Support Info -->
             <div class="support">
-                If you have any questions or need assistance, feel free to contact us at <a href="mailto:support@${institutionName.toLowerCase().replace(/\s+/g, '').replace(',', '')}.ac.in">support@${institutionName.toLowerCase().replace(/\s+/g, '').replace(',', '')}.ac.in</a>. We're here to help!
+                If you have any questions or need assistance, feel free to contact us at <a href="mailto:sandeep.saini@lnmiit.ac.in>Sandeep Saini</a>. We're here to help!
             </div>
         </div>
 
-        <!-- Footer -->
         <div class="footer">
             <p>© 2024 ${institutionName}. All rights reserved.</p>
-            <p><a href="#">Unsubscribe</a> | <a href="#">Privacy Policy</a></p>
         </div>
     </body>
     

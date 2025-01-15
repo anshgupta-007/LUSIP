@@ -1,7 +1,8 @@
 // userSchema.js
 const { DataTypes } = require('sequelize');
 const { sequelize } = require('../config/database');
-
+const mailSender = require('../utils/mailSender');
+const welcomeTemplate=require('../mail/templates/welcomeTemplate');
 const User = sequelize.define('User', {
   firstName: {
     type: DataTypes.STRING,
@@ -44,5 +45,6 @@ const User = sequelize.define('User', {
     allowNull: true,
   },
 }, { timestamps: false });
+
 
 module.exports = User;

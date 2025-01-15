@@ -229,24 +229,25 @@ const [isApplicantsModalOpen, setIsApplicantsModalOpen] = useState(false);
     <div className="min-h-screen p-6 bg-gray-100">
       {/* <ToastContainer position="bottom-left" autoClose={3000} limit={1} hideProgressBar={false} newestOnTop closeOnClick pauseOnFocusLoss draggable pauseOnHover /> */}
 
-      <h1 className="text-4xl text-center font-extrabold mb-10 text-indigo-700">
-        My Listed Projects
-      </h1>
+      <div className="flex items-center justify-between mb-6">
+  <h1 className="text-4xl font-extrabold text-indigo-700 flex-grow text-center">
+    My Listed Projects
+  </h1>
+  <button
+    onClick={openModal}
+    className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 transition duration-200"
+  >
+    Add Project
+  </button>
+</div>
 
-      <div className="flex justify-end mb-6">
-        <button
-          onClick={openModal}
-          className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 transition duration-200"
-        >
-          Add Project
-        </button>
-      </div>
+
 
       {false ? (
         <LoadingSpinner/>
       ) : projects.length > 0 ? (
         <div className="overflow-x-auto">
-  <table className="min-w-full bg-white border border-gray-300 rounded-lg shadow-md">
+  <table className="w-11/12 mx-auto bg-white border border-gray-300 rounded-lg shadow-md">
     <thead className="bg-indigo-200 text-indigo-800">
       <tr>
         <th className="px-6 py-4 text-left text-sm font-semibold">Project Name</th>

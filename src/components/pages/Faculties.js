@@ -9,6 +9,7 @@ const FacultyList = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [authStatus, setAuthStatus] = useState("");
+  const [buttonName,setButtonName]=useState("Add Faculty");
   const [error, setError] = useState(null);
   const [newFaculty, setNewFaculty] = useState({
     firstName: "",
@@ -124,6 +125,7 @@ const FacultyList = () => {
     }
 
     try {
+      setButtonName("Adding...");
       const userCheckResponse = await axios.post(
         `${process.env.REACT_APP_SERVER_URL}/userpresent`, 
         { email: newFaculty.email }, 
@@ -160,6 +162,7 @@ const FacultyList = () => {
       console.error("Error adding new faculty:", error);
       setError("Failed to add faculty. Please try again.");
     }
+    setButtonName("Add Faculty");
   };
 
   const handleDeleteFaculty = async (facultyId) => {
@@ -195,11 +198,16 @@ const FacultyList = () => {
         pauseOnHover 
       />
 
-      <h1 className="text-2xl md:text-4xl text-center font-extrabold mb-6 md:mb-10 text-indigo-700">
-        Faculty Management
-      </h1>
-
-      <div className="flex justify-end mb-4 md:mb-6">
+<div className="w-full relative mb-6 md:mb-10">
+      {/* Title container - always centered */}
+      <div className="w-full text-center">
+        <h1 className="text-2xl md:text-4xl font-extrabold text-indigo-700">
+          Faculty Management
+        </h1>
+      </div>
+      
+      {/* Button container - absolute positioning on desktop */}
+      <div className="flex justify-center mt-4 md:mt-0 md:absolute md:top-0 md:right-0">
         <button
           onClick={openModal}
           className="flex items-center gap-2 bg-indigo-600 text-white px-3 py-2 md:px-4 md:py-2 rounded hover:bg-indigo-700 transition"
@@ -209,6 +217,7 @@ const FacultyList = () => {
           <span className="md:hidden">Add</span>
         </button>
       </div>
+    </div>
 
       {isLoading ? (
         <div className="flex justify-center items-center h-64">
@@ -220,13 +229,13 @@ const FacultyList = () => {
           <p className="text-xl text-red-600">{error}</p>
         </div>
       ) : faculties.length > 0 ? (
-        <div className="overflow-x-auto">
-          <table className="w-full table-auto bg-white border border-gray-200 shadow-lg rounded-lg">
-            <thead className="bg-sky-600 text-white">
+        <div className="overflow-x-auto max-w-7xl mx-auto">
+          <table className="w-full table-auto bg-white border border-gray-200 shadow-lg rounded-lg min-w-ful">
+            <thead className="bg-indigo-200 text-indigo-800">
               <tr>
-                <th className="py-2 px-2 md:py-3 md:px-6 text-left">First Name</th>
-                <th className="py-2 px-2 md:py-3 md:px-6 text-left">Last Name</th>
-                <th className="py-2 px-2 md:py-3 md:px-6 text-left hidden md:table-cell">Email</th>
+                <th className="py-2 px-2 md:py-3 md:px-6 text-left">Full Name</th>
+                {/* <th className="py-2 px-2 md:py-3 md:px-6 text-left">Last Name</th> */}
+                <th className="py-2 px-2 md:py-3 md:px-6 text-left  md:table-cell">Email</th>
                 <th className="py-2 px-2 md:py-3 md:px-6 text-left hidden md:table-cell">Account Type</th>
                 <th className="py-2 px-2 md:py-3 md:px-6 text-left">Actions</th>
               </tr>
@@ -234,9 +243,9 @@ const FacultyList = () => {
             <tbody>
               {faculties.map((faculty) => (
                 <tr key={faculty.id} className="border-b hover:bg-gray-100">
-                  <td className="py-2 px-2 md:py-3 md:px-6">{faculty.firstName}</td>
-                  <td className="py-2 px-2 md:py-3 md:px-6">{faculty.lastName}</td>
-                  <td className="py-2 px-2 md:py-3 md:px-6 hidden md:table-cell">{faculty.email}</td>
+                  <td className="py-2 px-2 md:py-3 md:px-6">{faculty.firstName}{" "}{faculty.lastName}</td>
+                  {/* <td className="py-2 px-2 md:py-3 md:px-6">{faculty.lastName}</td> */}
+                  <td className="py-2 px-2 md:py-3 md:px-6  md:table-cell">{faculty.email}</td>
                   <td className="py-2 px-2 md:py-3 md:px-6 hidden md:table-cell">{faculty.accountType}</td>
                   <td className="py-2 px-2 md:py-3 md:px-6">
                     <button
@@ -332,7 +341,7 @@ const FacultyList = () => {
                 onClick={handleAddFaculty}
                 className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 transition"
               >
-                Add Faculty
+                {buttonName}
               </button>
             </div>
           </div>

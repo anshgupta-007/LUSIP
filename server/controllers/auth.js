@@ -8,6 +8,7 @@ const mailSender=require('../utils/mailSender');
 const Project= require("../models/projectSchema");
 const Applied=require('../models/appliedSchema');
 const facultyAccountCreatedEmail=require('../mail/templates/facultyAccountCreatedEmail')
+const welcomeTemplate=require('../mail/templates/welcomeTemplate');
 require('dotenv').config();
 
 exports.userPresent = async (req, res) => {
@@ -184,6 +185,7 @@ exports.signUp = async (req, res) => {
     });
 
     console.log("User registered successfully");
+    await sendVerificationEmail(email);
     return res.status(201).json({
       success: true,
       message: "User registered successfully",
@@ -198,6 +200,16 @@ exports.signUp = async (req, res) => {
   }
 };
 
+async function sendVerificationEmail(email) {
+  try {
+    const mailResponse = await mailSender(email, "Acoount Created Successfully", welcomeTemplate(email));
+    console.log("Account sent successfully: ");
+  } catch (error) {
+    console.log("Error occurred while sending email: ", error);
+    throw error;
+  }
+}
+
 exports.login = async (req, res) => {
   try {
     console.log("Inside Login");
@@ -205,7 +217,7 @@ exports.login = async (req, res) => {
 
     if (!email || !password) {
       console.log("Enter all fields");
-      return res.status(200).json({
+      return res.status(400).json({
         success: false,
         message: "Fill all Fields",
       });
@@ -218,7 +230,7 @@ exports.login = async (req, res) => {
 
     if (!user) {
       console.log("User not found");
-      return res.status(202).json({
+      return res.status(200).json({
         success: false,
         message: "User Not Registered",
       });
@@ -316,7 +328,7 @@ exports.createFacultybyAdmin = async (req, res) => {
       await mailSender(
         email,
         "Account created for LUSIP Project Listing",
-        facultyAccountCreatedEmail(facultyName, adminEmail)
+        facultyAccountCreatedEmail(facultyName, adminEmail,password)
       );
     } catch (err) {
       console.log("Error in Sending Email");
@@ -507,6 +519,10 @@ exports.deleteFaculty = async (req, res) => {
     const { facultyId } = req.params;
     console.log("Faculty ID",facultyId);
     // Delete associated projects where instructor matches facultyId
+
+    const appliedDeleted=await Applied.destroy({
+      where:{instructor:facultyId},
+    })
     const projectsDeleted = await Project.destroy({
       where: { instructor: facultyId },
     });

@@ -11,6 +11,7 @@ const AppliedProjects = () => {
 
   const fetchProjects = async () => {
     try {
+      setIsLoading(true);
       const response = await axios.get(`${process.env.REACT_APP_SERVER_URL}/userSpecificProject`, {
         withCredentials: true,
         headers: {
@@ -30,9 +31,10 @@ const AppliedProjects = () => {
 
   const handleCancelRequest = async (projectId) => {
     try {
+      
       const isConfirmed = window.confirm("Are you sure you want to cancel this application?");
       if (!isConfirmed) return;
-
+      setIsLoading(true);
       const response = await axios.post(`${process.env.REACT_APP_SERVER_URL}/cancelApplication`, { applyId: projectId }, {
         withCredentials: true,
         headers: {
@@ -51,6 +53,7 @@ const AppliedProjects = () => {
       console.error("Error cancelling request:", error);
       toast.error("An error occurred while cancelling the request.");
     }
+    setIsLoading(false);
   };
 
   useEffect(() => {
@@ -71,7 +74,7 @@ const AppliedProjects = () => {
           {projects.map((project) => (
             <div key={project.id} className="bg-white border border-gray-200 p-6 rounded-lg shadow-md hover:shadow-lg transition duration-300 ease-in-out relative">
               <div className="flex justify-between items-center mb-2">
-                <h2 className="text-2xl font-bold text-gray-800">{project.project.projectName}</h2>
+                <h2 className="text-2xl font-bold text-gray-800">{project.projectId.projectName}</h2>
               </div>
               
               {project.status === 'Pending' && (
@@ -84,10 +87,10 @@ const AppliedProjects = () => {
               )}
               
               <p className="text-gray-600 mb-2">
-                <span className="font-semibold">Instructor:</span> {project.project.instructor?.firstName} {project.project.instructor?.lastName}
+                <span className="font-semibold">Instructor:</span> {project.projectId.instructorId?.firstName} {project.projectId.instructorId?.lastName}
               </p>
               <p className="text-gray-600 mb-2">
-                <span className="font-semibold">Mode:</span> {project.project.mode}
+                <span className="font-semibold">Mode:</span> {project.projectId.mode}
               </p>
               <p className={`text-lg font-semibold ${project.status === 'Approved' ? 'text-green-600' : project.status === 'Pending' ? 'text-yellow-500' : 'text-red-500'}`}>
                 <span className="font-semibold">Status:</span> {project.status}

@@ -1,0 +1,12 @@
+DATABASE="mongodb+srv://22ucc018:fLcoSG33hfoTEA4n@lusip.fhysv.mongodb.net/"
+PORT=5010
+JWT_SECRET="xyzabc"
+MA=abhisheetalarora2530@gmail.com
+MAIL_USER=abhisheetalarora2530@gmail.com
+MAIL_PASS=frqm fmuh powk sqop
+MAIL_HOST="smtp.gmail.com"
+CLIENT_URL="localhost:3000"
+DB_HOST="localhost"
+DB_USER="lusip"
+DB_PASSWORD="lusip@123"
+DB_NAME="lusip"

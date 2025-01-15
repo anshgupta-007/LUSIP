@@ -9,7 +9,7 @@ const Project = sequelize.define('Project', {
     allowNull: false,
   },
   projectDescription: {
-    type: DataTypes.STRING,
+    type: DataTypes.TEXT,
     allowNull: true,
   },
   instructor: {
